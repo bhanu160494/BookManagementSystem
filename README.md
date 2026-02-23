@@ -13,7 +13,7 @@ For developing the project, we used the following dependencies:
     ```
 2. Navigate to the project directory:
     ```sh
-    cd Go-Learning
+    cd BookManagementSystem
     ```
 3. Install the dependencies:
     ```sh
@@ -21,6 +21,18 @@ For developing the project, we used the following dependencies:
     ```
 
 ## Usage
+1. Set environment variables:
+    - `MONGODB_URI` (required)
+    - `MONGODB_DB_NAME` (optional, default: `test`)
+    - `MONGODB_COLLECTION` (optional, default: `bookstore`)
+
+    PowerShell example:
+    ```powershell
+    $env:MONGODB_URI="mongodb+srv://<username>:<password>@<cluster-url>/?retryWrites=true&w=majority"
+    $env:MONGODB_DB_NAME="test"
+    $env:MONGODB_COLLECTION="bookstore"
+    ```
+
 1. Start the server:
     ```sh
     go run main.go

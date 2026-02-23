@@ -4,19 +4,31 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-//temporary connection string for testing
-const connectionString = "mongodb+srv://admin:admin@cluster0.9ipq5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-const dbName = "test"
-const collName = "bookstore"
-
 var Collection *mongo.Collection
 
+func getEnv(key string, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
 func init() {
+	connectionString := os.Getenv("MONGODB_URI")
+	if connectionString == "" {
+		log.Fatal("MONGODB_URI is not set")
+	}
+
+	dbName := getEnv("MONGODB_DB_NAME", "test")
+	collName := getEnv("MONGODB_COLLECTION", "bookstore")
+
 	//client option
 	clientOptions := options.Client().ApplyURI(connectionString)
 
