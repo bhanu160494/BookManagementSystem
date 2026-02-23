@@ -1,6 +1,7 @@
 package database
 
 import (
+	"Go-Learning/config"
 	"context"
 	"fmt"
 	"log"
@@ -12,22 +13,14 @@ import (
 
 var Collection *mongo.Collection
 
-func getEnv(key string, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
 func init() {
 	connectionString := os.Getenv("MONGODB_URI")
 	if connectionString == "" {
 		log.Fatal("MONGODB_URI is not set")
 	}
 
-	dbName := getEnv("MONGODB_DB_NAME", "test")
-	collName := getEnv("MONGODB_COLLECTION", "bookstore")
+	dbName := config.GetEnvValue("MONGODB_DB_NAME", "test")
+	collName := config.GetEnvValue("MONGODB_COLLECTION", "bookstore")
 
 	//client option
 	clientOptions := options.Client().ApplyURI(connectionString)

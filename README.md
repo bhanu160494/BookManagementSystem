@@ -25,6 +25,7 @@ For developing the project, we used the following dependencies:
     - `MONGODB_URI` (required)
     - `MONGODB_DB_NAME` (optional, default: `test`)
     - `MONGODB_COLLECTION` (optional, default: `bookstore`)
+    - `PORT` (optional, default: `8080`)
 
     PowerShell example:
     ```powershell
