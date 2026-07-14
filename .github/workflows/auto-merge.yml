@@ -1,0 +1,37 @@
+name: Auto Merge to Main
+
+on:
+  push:
+    branches-ignore:
+      - Main
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Merge branch into Main
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          echo "Merging branch $BRANCH_NAME into main"
+          git branch -a
+          git checkout Main
+          git merge $BRANCH_NAME --no-ff
+          git push origin Main
+
+      - name: Delete branch
+        if: ${{ github.ref_name != 'Main' }}
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          echo "Deleting branch $BRANCH_NAME"
+          git push origin --delete $BRANCH_NAME
