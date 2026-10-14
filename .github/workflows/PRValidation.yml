@@ -1,0 +1,15 @@
+name: Auto Merge to Main
+
+on:
+  pull_request:
+    branches:
+      - Main
+
+jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
