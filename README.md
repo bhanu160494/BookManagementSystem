@@ -29,7 +29,7 @@ For developing the project, we used the following dependencies:
 
     PowerShell example:
     ```powershell
-    $env:MONGODB_URI="mongodb+srv://<username>:<password>@<cluster-url>/?retryWrites=true&w=majority"
+    $env:MONGODB_URI="mongodb+srv://admin:<password>@cluster0.urh68bm.mongodb.net/"
     $env:MONGODB_DB_NAME="test"
     $env:MONGODB_COLLECTION="bookstore"
     ```
@@ -38,7 +38,10 @@ For developing the project, we used the following dependencies:
     ```sh
     go run main.go
     ```
-2. Use the following API endpoints to interact with the system:
+2. Open the API documentation in your browser:
+    - Swagger UI: `http://localhost:8080/swagger/`
+    - OpenAPI spec: `http://localhost:8080/openapi.yaml`
+3. Use the following API endpoints to interact with the system:
 
 ### APIs demonstration:
 1. **GET /books**: Returns a complete set of books with their detailed information.
