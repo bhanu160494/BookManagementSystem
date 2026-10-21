@@ -1,0 +1,54 @@
+{
+  "realm": "bookstore",
+  "enabled": true,
+  "registrationAllowed": false,
+  "sslRequired": "external",
+  "accessTokenLifespan": 900,
+  "roles": {
+    "realm": [
+      {
+        "name": "book-user",
+        "description": "Can browse the book catalogue"
+      },
+      {
+        "name": "book-admin",
+        "description": "Can create, update and delete books"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "bookstore-api",
+      "name": "Bookstore API",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "bookadmin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "bookadmin@example.com",
+      "firstName": "Book",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ChangeMe123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["book-user", "book-admin"]
+    }
+  ]
+}

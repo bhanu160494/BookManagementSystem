@@ -9,6 +9,7 @@ paths:
   /:
     get:
       summary: Home page
+      security: []
       responses:
         '200':
           description: Welcome message
@@ -17,9 +18,106 @@ paths:
               schema:
                 type: string
                 example: Welcome to the Bookstore Management System
+  /auth/signup:
+    post:
+      tags: [Authentication]
+      summary: Register a new user in Keycloak
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+        '400':
+          description: Validation error
+        '409':
+          description: User already exists
+        '502':
+          description: Keycloak unavailable
+  /auth/signin:
+    post:
+      tags: [Authentication]
+      summary: Exchange credentials for a Keycloak access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigninRequest'
+      responses:
+        '200':
+          description: Token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Validation error
+        '401':
+          description: Invalid username or password
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Obtain a new access token from a refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Refresh token invalid or expired
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Revoke a refresh token and end the Keycloak session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Logged out
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Profile of the currently authenticated user
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Missing or invalid access token
+        '403':
+          description: Missing required role
   /books:
     get:
+      tags: [Books]
       summary: Get all books
+      description: 'Requires role: book-user or book-admin.'
       responses:
         '200':
           description: List of books
@@ -29,9 +127,15 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/BookDetails'
+        '401':
+          description: Missing or invalid access token
+        '403':
+          description: Missing required role
   /book:
     post:
+      tags: [Books]
       summary: Create a book
+      description: 'Requires role: book-admin.'
       requestBody:
         required: true
         content:
@@ -45,9 +149,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BookInput'
+        '401':
+          description: Missing or invalid access token
+        '403':
+          description: Missing required role
   /book/{id}:
     get:
+      tags: [Books]
       summary: Get a single book by ID
+      description: 'Requires role: book-user or book-admin.'
       parameters:
         - name: id
           in: path
@@ -64,10 +174,16 @@ paths:
                 $ref: '#/components/schemas/BookDetails'
         '400':
           description: Invalid ID format
+        '401':
+          description: Missing or invalid access token
+        '403':
+          description: Missing required role
         '404':
           description: Book not found
     put:
+      tags: [Books]
       summary: Update a book by ID
+      description: 'Requires role: book-admin.'
       parameters:
         - name: id
           in: path
@@ -90,8 +206,14 @@ paths:
                 $ref: '#/components/schemas/BookInput'
         '400':
           description: Invalid ID format
+        '401':
+          description: Missing or invalid access token
+        '403':
+          description: Missing required role
     delete:
+      tags: [Books]
       summary: Delete a book by ID
+      description: 'Requires role: book-admin.'
       parameters:
         - name: id
           in: path
@@ -104,8 +226,97 @@ paths:
           description: Book deleted successfully
         '400':
           description: Invalid ID format
+        '401':
+          description: Missing or invalid access token
+        '403':
+          description: Missing required role
+security:
+  - bearerAuth: []
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Keycloak-issued access token obtained from POST /auth/signin.
   schemas:
+    SignupRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          example: alice
+        email:
+          type: string
+          format: email
+          example: alice@example.com
+        firstName:
+          type: string
+          example: Alice
+        lastName:
+          type: string
+          example: Doe
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: Str0ngPassw0rd!
+    SignupResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        message:
+          type: string
+    SigninRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: alice
+        password:
+          type: string
+          format: password
+          example: Str0ngPassw0rd!
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        expires_in:
+          type: integer
+        refresh_token:
+          type: string
+        refresh_expires_in:
+          type: integer
+        token_type:
+          type: string
+          example: Bearer
+        scope:
+          type: string
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
     BookInput:
       type: object
       required:
