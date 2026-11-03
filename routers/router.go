@@ -1,26 +1,50 @@
 package routers
 
 import (
-	"Go-Learning/controller"
 	"net/http"
+
+	"Go-Learning/auth"
+	"Go-Learning/config"
+	"Go-Learning/controller"
 
 	"github.com/gorilla/mux"
 )
 
 // Router initializes the API routes
 func Router() *mux.Router {
+	keycloakCfg := config.LoadKeycloakConfig()
+	keycloakClient := auth.NewKeycloakClient(keycloakCfg)
+	authMiddleware := auth.NewMiddleware(auth.NewTokenVerifier(keycloakCfg))
+	authController := controller.NewAuthController(keycloakClient)
+
+	readerRole := config.GetEnvValue("BOOKSTORE_READER_ROLE", "book-user")
+	adminRole := config.GetEnvValue("BOOKSTORE_ADMIN_ROLE", "book-admin")
+
 	router := mux.NewRouter()
 
-	// Define the routes and their handlers
+	// Public routes
 	router.HandleFunc("/", controller.HomePage).Methods("GET")
-	router.HandleFunc("/books", controller.GetAllBookDetails).Methods("GET")
-	router.HandleFunc("/book/{id}", controller.GetOneBookDetails).Methods("GET")
-	router.HandleFunc("/book", controller.InsertBookDetails).Methods("POST")
-	router.HandleFunc("/book/{id}", controller.UpdateBookDetails).Methods("PUT")
-	router.HandleFunc("/book/{id}", controller.DeleteBookDetails).Methods("DELETE")
+	router.HandleFunc("/auth/signup", authController.Signup).Methods("POST")
+	router.HandleFunc("/auth/signin", authController.Signin).Methods("POST")
+	router.HandleFunc("/auth/refresh", authController.Refresh).Methods("POST")
+	router.HandleFunc("/auth/logout", authController.Logout).Methods("POST")
 	router.HandleFunc("/openapi.yaml", serveOpenAPISpec).Methods("GET")
 	router.HandleFunc("/swagger", swaggerUIRedirect).Methods("GET")
 	router.HandleFunc("/swagger/", swaggerUIPage).Methods("GET")
+
+	// Any authenticated user may read their own profile and browse the catalogue.
+	readRoutes := router.NewRoute().Subrouter()
+	readRoutes.Use(authMiddleware.Authenticate, authMiddleware.RequireRole(readerRole, adminRole))
+	readRoutes.HandleFunc("/auth/me", authController.Me).Methods("GET")
+	readRoutes.HandleFunc("/books", controller.GetAllBookDetails).Methods("GET")
+	readRoutes.HandleFunc("/book/{id}", controller.GetOneBookDetails).Methods("GET")
+
+	// Mutating operations require the administrator role.
+	writeRoutes := router.NewRoute().Subrouter()
+	writeRoutes.Use(authMiddleware.Authenticate, authMiddleware.RequireRole(adminRole))
+	writeRoutes.HandleFunc("/book", controller.InsertBookDetails).Methods("POST")
+	writeRoutes.HandleFunc("/book/{id}", controller.UpdateBookDetails).Methods("PUT")
+	writeRoutes.HandleFunc("/book/{id}", controller.DeleteBookDetails).Methods("DELETE")
 
 	return router
 }
@@ -66,6 +90,7 @@ func swaggerUIPage(w http.ResponseWriter, r *http.Request) {
 			url: '/openapi.yaml',
 			dom_id: '#swagger-ui',
 			deepLinking: true,
+			persistAuthorization: true,
 			presets: [SwaggerUIBundle.presets.apis],
 			layout: 'BaseLayout'
 		});

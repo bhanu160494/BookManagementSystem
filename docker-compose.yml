@@ -1,0 +1,50 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: bookstore-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: bookstore-keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set KEYCLOAK_ADMIN_PASSWORD in your .env}
+      KC_HTTP_PORT: 8080
+      # Pins the `iss` claim so tokens validate the same way from any network.
+      KC_HOSTNAME: http://localhost:8081
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+
+  api:
+    build: .
+    container_name: bookstore-api
+    depends_on:
+      - mongo
+      - keycloak
+    environment:
+      PORT: 8080
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB_NAME: test
+      MONGODB_COLLECTION: bookstore
+      KEYCLOAK_BASE_URL: http://localhost:8081
+      KEYCLOAK_INTERNAL_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: bookstore
+      KEYCLOAK_CLIENT_ID: bookstore-api
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set KEYCLOAK_ADMIN_PASSWORD in your .env}
+      KEYCLOAK_DEFAULT_USER_ROLE: book-user
+      BOOKSTORE_READER_ROLE: book-user
+      BOOKSTORE_ADMIN_ROLE: book-admin
+    ports:
+      - "8080:8080"
+
+volumes:
+  mongo-data:
