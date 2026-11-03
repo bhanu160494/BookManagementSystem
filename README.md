@@ -1,79 +1,128 @@
 # Go-APIs
-Developing APIs Bookstore Management System using Go framework.
+Develope Restful APIs for Bookstore Management System using Go framework.
 
 ## Dependencies
-For developing the project, we used the following dependencies:
+In this project, we used the following dependencies:
 1. MongoDB database for storing data.
 2. Gorilla mux for routing the incoming calls.
 3. Keycloak (open source) as the identity provider for user credentials, signup/signin and role based authorization.
 4. `github.com/golang-jwt/jwt/v5` for offline validation of Keycloak access tokens.
 
-## Installation
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/yourusername/Go-Learning.git
-    ```
-2. Navigate to the project directory:
-    ```sh
-    cd BookManagementSystem
-    ```
-3. Install the dependencies:
-    ```sh
+## Installation and setup
+
+### Prerequisites
+
+Install the following before starting the application:
+
+- Go 1.21 or later
+- Docker Desktop with Docker Compose
+- PowerShell, Bash, or another shell for setting environment variables
+
+### Environment variables
+
+For the local Docker workflow, set this required variable before starting Compose:
+
+- `KEYCLOAK_ADMIN_PASSWORD` - required by Keycloak and the signup flow
+
+When running the Go API directly on the host, also set:
+
+- `MONGODB_URI` - required by the database package; use `mongodb://localhost:27017`
+
+The following variables are optional and have the listed defaults:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `MONGODB_DB_NAME` | `test` | MongoDB database name |
+| `MONGODB_COLLECTION` | `bookstore` | MongoDB collection name |
+| `PORT` | `8080` | API port |
+| `KEYCLOAK_BASE_URL` | `http://localhost:8081` | Public Keycloak URL; must match the token issuer |
+| `KEYCLOAK_INTERNAL_BASE_URL` | `KEYCLOAK_BASE_URL` | URL used by the API for Keycloak requests |
+| `KEYCLOAK_REALM` | `bookstore` | Keycloak realm |
+| `KEYCLOAK_CLIENT_ID` | `bookstore-api` | Keycloak client ID |
+| `KEYCLOAK_CLIENT_SECRET` | empty | Secret for a confidential client, if used |
+| `KEYCLOAK_ADMIN_REALM` | `master` | Realm used for Keycloak Admin API login |
+| `KEYCLOAK_ADMIN_CLIENT_ID` | `admin-cli` | Admin API client ID |
+| `KEYCLOAK_ADMIN_USERNAME` | `admin` | Keycloak administrator username |
+| `KEYCLOAK_DEFAULT_USER_ROLE` | `book-user` | Role granted to newly signed-up users |
+| `KEYCLOAK_EXPECTED_AUDIENCE` | empty | Optional audience/authorized-party validation |
+| `BOOKSTORE_READER_ROLE` | `book-user` | Role allowed to read books |
+| `BOOKSTORE_ADMIN_ROLE` | `book-admin` | Role allowed to modify books |
+
+Never commit real secrets. Set them in your shell, a local `.env` file, or a secret manager.
+
+### Run the application with local Docker services
+
+Run these steps from the `BookManagementSystem` directory.
+
+1. Download Go dependencies:
+    ```powershell
     go mod tidy
     ```
 
-## Usage
-1. Set environment variables:
-    - `MONGODB_URI` (required)
-    - `MONGODB_DB_NAME` (optional, default: `test`)
-    - `MONGODB_COLLECTION` (optional, default: `bookstore`)
-    - `PORT` (optional, default: `8080`)
-
-    Keycloak settings:
-    - `KEYCLOAK_BASE_URL` (optional, default: `http://localhost:8081`) - public URL, must match the `iss` claim
-    - `KEYCLOAK_INTERNAL_BASE_URL` (optional, defaults to `KEYCLOAK_BASE_URL`) - URL the API uses for outbound calls
-    - `KEYCLOAK_REALM` (optional, default: `bookstore`)
-    - `KEYCLOAK_CLIENT_ID` (optional, default: `bookstore-api`)
-    - `KEYCLOAK_CLIENT_SECRET` (only for confidential clients)
-    - `KEYCLOAK_ADMIN_USERNAME` (optional, default: `admin`)
-    - `KEYCLOAK_ADMIN_PASSWORD` (**required for signup** - used against the `master` realm Admin API)
-    - `KEYCLOAK_DEFAULT_USER_ROLE` (optional, default: `book-user`) - realm role granted on signup
-    - `KEYCLOAK_EXPECTED_AUDIENCE` (optional) - enforce `aud`/`azp` when set
-    - `BOOKSTORE_READER_ROLE` (optional, default: `book-user`)
-    - `BOOKSTORE_ADMIN_ROLE` (optional, default: `book-admin`)
-
-    Never commit real secrets - pass them through your shell, `.env` file or secret manager.
-
-    PowerShell example:
+2. Set the Keycloak administrator password:
     ```powershell
-    $env:MONGODB_URI="mongodb+srv://admin:<password>@cluster0.urh68bm.mongodb.net/"
-    $env:MONGODB_DB_NAME="test"
-    $env:MONGODB_COLLECTION="bookstore"
-    $env:KEYCLOAK_BASE_URL="http://localhost:8081"
     $env:KEYCLOAK_ADMIN_PASSWORD="<keycloak-admin-password>"
     ```
 
-2. Start Keycloak and MongoDB (free/open source Keycloak distribution):
+3. Start MongoDB and Keycloak:
     ```powershell
-    $env:KEYCLOAK_ADMIN_PASSWORD="<keycloak-admin-password>"
     docker compose up -d mongo keycloak
     ```
-    This imports `keycloak/realm-export.json`, which creates:
-    - realm `bookstore`
-    - public client `bookstore-api` with direct access grants enabled
-    - realm roles `book-user` and `book-admin`
-    - a seed administrator `bookadmin` (change the password immediately)
+    MongoDB runs from the `mongo:7` image at `mongodb://localhost:27017`. Its data is
+    persisted in the Docker volume `mongo-data`.
 
-    The Keycloak admin console is available at `http://localhost:8081`.
+    Keycloak imports `keycloak/realm-export.json`, which creates realm `bookstore`, client
+    `bookstore-api`, roles `book-user` and `book-admin`, and the seed administrator
+    `bookadmin` with the password defined in that realm export. Change that password after
+    the first login. The admin console is available at `http://localhost:8081`.
 
-3. Start the server:
-    ```sh
+4. Configure MongoDB for the host-run Go API:
+    ```powershell
+    $env:MONGODB_URI="mongodb://localhost:27017"
+    ```
+    The defaults for `MONGODB_DB_NAME`, `MONGODB_COLLECTION`, `PORT`, and the remaining
+    Keycloak variables can be used without setting them explicitly.
+
+5. Start the API:
+    ```powershell
     go run main.go
     ```
-4. Open the API documentation in your browser:
+
+6. Verify the API documentation:
     - Swagger UI: `http://localhost:8080/swagger/` (use the **Authorize** button to paste your access token)
     - OpenAPI spec: `http://localhost:8080/openapi.yaml`
-5. Use the following API endpoints to interact with the system:
+
+### Run the complete application in Docker
+
+To run MongoDB, Keycloak, and the API as Docker services instead of starting the Go API on
+the host:
+
+1. Set the Keycloak administrator password:
+    ```powershell
+    $env:KEYCLOAK_ADMIN_PASSWORD="<keycloak-admin-password>"
+    ```
+2. Build and start all services:
+    ```powershell
+    docker compose up -d --build
+    ```
+3. Open the API at `http://localhost:8080`. The containerized API connects to MongoDB at
+   `mongodb://mongo:27017` and Keycloak at `http://keycloak:8080`.
+
+To stop the services while keeping MongoDB data:
+
+```powershell
+docker compose down
+```
+
+To stop the services and delete the local MongoDB data:
+
+```powershell
+docker compose down -v
+```
+
+## Usage
+
+Use the following API endpoints to interact with the system:
 
 ## Authentication and authorization
 All book endpoints require an `Authorization: Bearer <access_token>` header. Tokens are issued by
